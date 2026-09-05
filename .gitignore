@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.turbo/
+*.log
+.env
+.env.local
+*.db
+*.db-journal
+.DS_Store
+.vite/
+coverage/
+.codebuddy/
+*.tsbuildinfo

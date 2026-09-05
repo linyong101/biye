@@ -1,0 +1,31 @@
+{
+  "name": "vigil",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vigil · 前端稳定性监控与智能诊断平台",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:server dev:dashboard",
+    "dev:server": "npm run dev -w @vigil/server",
+    "dev:dashboard": "npm run dev -w @vigil/dashboard",
+    "build": "npm run build -w @vigil/web-sdk && npm run build -w @vigil/server",
+    "build:sdk": "npm run build -w @vigil/web-sdk",
+    "seed": "npm run seed -w @vigil/server",
+    "demo": "node demo/server.mjs",
+    "db:push": "npm run db:push -w @vigil/server",
+    "typecheck": "npm run typecheck -w @vigil/web-sdk && npm run typecheck -w @vigil/dashboard",
+    "test": "node --import tsx --test --experimental-test-coverage \"packages/sdk/tests/*.test.ts\"",
+    "test:watch": "node --import tsx --test --watch packages/sdk/tests/",
+    "sourcemap:demo": "node scripts/sourcemap-demo.mjs"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>演示商城 · Vigil Demo</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="logo">演示商城</div>
+      <nav>
+        <a href="#" class="active">首页</a>
+        <a href="#cart">购物车</a>
+        <a href="#order">我的订单</a>
+      </nav>
+      <span class="badge" id="sdk-status">SDK 初始化中…</span>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <h1>Vigil 异常制造机</h1>
+        <p>
+          点击下面的按钮制造真实的线上事故，数据会实时上报到采集服务。
+          打开 <a href="http://localhost:5173" target="_blank">看板</a> 即可看到分析结果。
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>异常类型</h2>
+        <div class="grid" id="error-grid"></div>
+      </section>
+
+      <section class="panel">
+        <h2>其他场景</h2>
+        <div class="grid" id="misc-grid"></div>
+      </section>
+
+      <section class="panel">
+        <h2>商品列表</h2>
+        <div class="products" id="products"></div>
+      </section>
+
+      <section class="panel" id="cart">
+        <h2>购物车结算</h2>
+        <div class="cart">
+          <div class="cart-summary">
+            <span id="cart-total">合计：¥0.00</span>
+          </div>
+          <button class="btn primary" id="checkout">提交订单</button>
+        </div>
+        <p class="tip">提示：先清空购物车再结算，会触发商品未定义的经典线上错误。</p>
+      </section>
+
+      <section class="panel">
+        <h2>运行日志</h2>
+        <div class="log" id="log"></div>
+      </section>
+    </main>
+
+    <!-- SDK 通过本地静态服务提供，等价于 CDN 引入 -->
+    <script src="/sdk/index.global.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

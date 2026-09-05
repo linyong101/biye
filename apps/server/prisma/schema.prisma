@@ -1,0 +1,143 @@
+// Vigil 数据模型
+// 开发默认 SQLite（零依赖启动）；生产切换 PostgreSQL 只需改 provider 与 DATABASE_URL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  appId     String   @unique
+  name      String
+  platform  String   @default("web")
+  createdAt DateTime @default(now())
+
+  issues    Issue[]
+  events    Event[]
+  sourceMaps SourceMap[]
+  alertRules AlertRule[]
+}
+
+/// 错误聚合后的"问题"。同一 fingerprint 只产生一条 Issue，避免看板被刷屏
+model Issue {
+  id          String   @id @default(cuid())
+  appId       String
+  fingerprint String
+  errorKind   String
+  level       String
+  title       String
+  /// 定位到的源码位置（堆栈首帧）
+  culprit     String?
+  stack       String?
+  eventCount  Int      @default(1)
+  userCount   Int      @default(1)
+  status      String   @default("unresolved") // unresolved | resolved | ignored
+  firstSeen   DateTime @default(now())
+  lastSeen    DateTime @default(now())
+
+  /// AI 根因诊断结果（JSON 字符串），诊断后缓存，避免重复调用模型
+  aiDiagnosis   String?
+  aiDiagnosedAt DateTime?
+
+  events  Event[]
+  project Project @relation(fields: [appId], references: [appId])
+
+  @@unique([appId, fingerprint])
+  @@index([appId, status, lastSeen])
+}
+
+/// 用于精确统计"影响用户数"（对 sessionId 去重）
+model IssueUser {
+  id           String @id @default(cuid())
+  appId        String
+  fingerprint  String
+  sessionId    String
+
+  @@unique([appId, fingerprint, sessionId])
+  @@index([appId, fingerprint])
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  eventId   String   @unique
+  appId     String
+  kind      String // error | performance | behavior
+  ts        DateTime
+  createdAt DateTime @default(now())
+
+  // 错误维度
+  issueId          String?
+  fingerprint      String?
+  errorKind        String?
+  level            String?
+  /// 性能维度
+  perfName         String?
+  perfValue        Float?
+  perfRating       String?
+
+  release     String?
+  environment String?
+  sessionId   String?
+  userId      String?
+  url         String?
+  browser     String?
+  os          String?
+  device      String?
+
+  /// 完整事件体（含面包屑、堆栈、HTTP 上下文），JSON 字符串存储
+  payload String
+
+  issue Issue? @relation(fields: [issueId], references: [id])
+  project Project @relation(fields: [appId], references: [appId])
+
+  @@index([appId, kind, ts])
+  @@index([appId, ts])
+  @@index([issueId])
+}
+
+/// 上传的 SourceMap，用于把压缩堆栈还原到源码
+model SourceMap {
+  id        String   @id @default(cuid())
+  appId     String
+  release   String
+  fileName  String
+  content   String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [appId], references: [appId])
+
+  @@unique([appId, release, fileName])
+}
+
+/// 系统用户（登录与权限）
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  /// admin = 管理员（可管理用户），member = 普通成员
+  role         String   @default("member")
+  enabled      Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model AlertRule {
+  id        String   @id @default(cuid())
+  appId     String
+  /// 触发类型：new_issue | error_spike | perf_degrade
+  type      String
+  /// 阈值，含义随 type 变化
+  threshold Int      @default(1)
+  /// 告警推送地址（企微/钉钉/飞书机器人 Webhook）
+  webhook   String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [appId], references: [appId])
+}

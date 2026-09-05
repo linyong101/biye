@@ -1,0 +1,61 @@
+# 一键私有化部署（交付企业用）
+# 使用：docker compose up -d
+#
+# 注意：切换到 PostgreSQL 时，需同步修改 apps/server/prisma/schema.prisma
+#       datasource.provider = "postgresql"，并执行 npx prisma db push
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vigil-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vigil
+      POSTGRES_PASSWORD: vigil_pass
+      POSTGRES_DB: vigil
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vigil']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: vigil-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: vigil-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://vigil:vigil_pass@postgres:5432/vigil?schema=public
+      PORT: '3001'
+      DASHBOARD_ORIGIN: http://localhost:8080
+    ports:
+      - '3001:3001'
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    container_name: vigil-dashboard
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - '8080:80'
+
+volumes:
+  pgdata:
