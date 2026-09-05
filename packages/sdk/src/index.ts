@@ -6,6 +6,7 @@ import { installHttpPlugin } from './plugins/http'
 import { installPerformancePlugin } from './plugins/performance'
 import { installWhiteScreenPlugin } from './plugins/whiteScreen'
 import { installBehaviorPlugin } from './plugins/behavior'
+import { installReplayPlugin } from './plugins/replay'
 
 export * from './types'
 export { VigilClient } from './core/client'
@@ -37,6 +38,7 @@ export function init(options: VigilOptions): VigilClient {
   if (options.enablePerformance !== false) installPerformancePlugin(client)
   if (options.enableWhiteScreen !== false) installWhiteScreenPlugin(client)
   if (options.enableBehavior !== false) installBehaviorPlugin(client)
+  if (options.enableReplay !== false) installReplayPlugin(client, { intervalMs: options.replayIntervalMs })
 
   return client
 }

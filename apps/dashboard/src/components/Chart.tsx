@@ -1,6 +1,29 @@
 import { useEffect, useRef } from 'react'
-import * as echarts from 'echarts'
+import * as echarts from 'echarts/core'
+import { LineChart, BarChart, PieChart } from 'echarts/charts'
+import {
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  TitleComponent,
+  DataZoomComponent,
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import type { EChartsOption } from 'echarts'
+import type { ECharts } from 'echarts/core'
+
+// 按需注册看板实际用到的图表与组件，避免把完整 echarts（>1MB）打进包
+echarts.use([
+  LineChart,
+  BarChart,
+  PieChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  TitleComponent,
+  DataZoomComponent,
+  CanvasRenderer,
+])
 
 /**
  * ECharts 轻量封装。
@@ -9,7 +32,7 @@ import type { EChartsOption } from 'echarts'
  */
 export function Chart({ option, height = 280 }: { option: EChartsOption; height?: number }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<echarts.ECharts | null>(null)
+  const chartRef = useRef<ECharts | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return

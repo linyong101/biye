@@ -18,6 +18,7 @@
     "db:push": "npm run db:push -w @vigil/server",
     "typecheck": "npm run typecheck -w @vigil/web-sdk && npm run typecheck -w @vigil/dashboard",
     "test": "node --import tsx --test --experimental-test-coverage \"packages/sdk/tests/*.test.ts\"",
+    "test:server": "npm run test -w @vigil/server",
     "test:watch": "node --import tsx --test --watch packages/sdk/tests/",
     "sourcemap:demo": "node scripts/sourcemap-demo.mjs"
   },

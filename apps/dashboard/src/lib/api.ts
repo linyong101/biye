@@ -140,6 +140,42 @@ export interface IssueEvent {
   payload: Record<string, unknown> | null
 }
 
+export interface SessionSummary {
+  sessionId: string
+  lastTs: number
+  page: string
+  frameCount: number
+  eventCount: number
+  hasError: boolean
+}
+
+export interface ReplayNodeView {
+  tag: string
+  text?: string
+  cls?: string
+  id?: string
+  rect: { x: number; y: number; w: number; h: number }
+  value?: string
+}
+
+export interface ReplayFrameView {
+  type: string
+  url: string
+  t: number
+  nodes: ReplayNodeView[]
+}
+
+export interface SessionEvent {
+  id: string
+  kind: string
+  ts: number
+  url?: string | null
+  level?: string | null
+  title?: string | null
+  message?: string | null
+  frame: ReplayFrameView | null
+}
+
 export interface IssueDetail extends Issue {
   events: IssueEvent[]
   distribution: {
@@ -213,4 +249,12 @@ export const api = {
     request<AuthUser>(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
 
   deleteUser: (id: string) => request(`/api/users/${id}`, { method: 'DELETE' }),
+
+  sessions: (appId: string) =>
+    request<{ items: SessionSummary[]; total: number }>(`/api/sessions?appId=${encodeURIComponent(appId)}`),
+
+  session: (appId: string, sessionId: string) =>
+    request<{ sessionId: string; events: SessionEvent[] }>(
+      `/api/sessions/${encodeURIComponent(sessionId)}?appId=${encodeURIComponent(appId)}`,
+    ),
 }

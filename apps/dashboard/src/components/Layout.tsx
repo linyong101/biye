@@ -9,6 +9,7 @@ const NAV = [
   { to: '/issues', label: '问题', icon: '⚠' },
   { to: '/performance', label: '性能', icon: '◔' },
   { to: '/settings', label: '接入与告警', icon: '⚙' },
+  { to: '/sessions', label: '会话回放', icon: '⦿' },
 ]
 
 const RANGES = [

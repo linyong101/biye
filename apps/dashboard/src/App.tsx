@@ -9,6 +9,8 @@ import { IssueDetail } from './pages/IssueDetail'
 import { Performance } from './pages/Performance'
 import { Settings } from './pages/Settings'
 import { Login } from './pages/Login'
+import { Sessions } from './pages/Sessions'
+import { SessionReplay } from './pages/SessionReplay'
 
 /** 路由守卫：未登录跳转登录页，登录中显示加载态 */
 function ProtectedRoute() {
@@ -46,6 +48,8 @@ export default function App() {
             <Route path="/issues/:id" element={<IssueDetail />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/sessions" element={<Sessions />} />
+            <Route path="/sessions/:id" element={<SessionReplay />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

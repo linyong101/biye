@@ -88,13 +88,33 @@ export interface PerformanceEvent extends BaseEvent {
 
 export interface BehaviorEvent extends BaseEvent {
   kind: 'behavior'
-  name: 'pv' | 'click' | 'stay'
+  name: 'pv' | 'click' | 'stay' | 'replay'
   /** 停留时长（ms），仅 stay 事件有 */
   duration?: number
   extra?: Record<string, unknown>
 }
 
 export type VigilEvent = ErrorEvent | PerformanceEvent | BehaviorEvent
+
+/** 会话回放：单个 DOM 节点的精简快照（坐标为相对视口的百分比） */
+export interface ReplayNode {
+  tag: string
+  text?: string
+  cls?: string
+  id?: string
+  rect: { x: number; y: number; w: number; h: number }
+  value?: string
+}
+
+/** 会话回放：一帧（页面在某时刻的状态 + 触发原因） */
+export interface ReplayFrame {
+  /** 触发类型：snapshot | click | input | scroll | route */
+  type: string
+  url: string
+  /** 相对录制开始的毫秒数 */
+  t: number
+  nodes: ReplayNode[]
+}
 
 export interface VigilOptions {
   /** 项目标识，服务端据此隔离数据 */
@@ -117,6 +137,10 @@ export interface VigilOptions {
   enableBehavior?: boolean
   enableWhiteScreen?: boolean
   enableBreadcrumb?: boolean
+  /** 会话回放：轻量录制用户操作与界面快照，默认开启 */
+  enableReplay?: boolean
+  /** 回放快照采集间隔（ms），默认 3000 */
+  replayIntervalMs?: number
   /** 慢请求阈值（ms），默认 3000 */
   slowRequestThreshold?: number
   /** 需要脱敏的字段名（不区分大小写，命中即 ***） */

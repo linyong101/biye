@@ -113,7 +113,6 @@ function patchXHR(client: VigilClient): void {
       }
     })
 
-    // @ts-expect-error 透传参数
     return send.call(this, body)
   } as typeof send
 }

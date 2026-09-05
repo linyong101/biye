@@ -11,6 +11,7 @@ import type {
   VigilEvent,
   VigilOptions,
 } from '../types'
+import type { ReplayFrame } from '../types'
 import { getDeviceInfo, getSessionId, mask, sampled, uuid } from '../utils'
 import { BreadcrumbStore } from './breadcrumb'
 import { Transport } from './transport'
@@ -166,6 +167,11 @@ export class VigilClient {
       extra: input.extra,
     }
     this.send(event)
+  }
+
+  /** 上报一帧会话回放快照（内部转换为 behavior 事件） */
+  captureReplayFrame(frame: ReplayFrame): void {
+    this.captureBehavior({ name: 'replay', extra: frame as unknown as Record<string, unknown> })
   }
 
   /** 所有事件的统一出口：采样 → 脱敏 → 钩子 → 入队 */
