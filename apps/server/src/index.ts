@@ -1,5 +1,5 @@
 import { buildApp } from './app'
-import { checkErrorSpike } from './services/alerts'
+import { checkErrorSpike, checkPerfDegrade } from './services/alerts'
 import { ensureDefaultAdmin } from './services/auth'
 import { prisma } from './db'
 
@@ -11,7 +11,10 @@ async function bootstrap(): Promise<void> {
   // 每 5 分钟检查一次错误量突增
   setInterval(() => {
     void prisma.project.findMany({ select: { appId: true } }).then((projects) => {
-      for (const p of projects) void checkErrorSpike(p.appId)
+      for (const p of projects) {
+        void checkErrorSpike(p.appId)
+        void checkPerfDegrade(p.appId)
+      }
     })
   }, 5 * 60 * 1000).unref()
 

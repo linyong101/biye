@@ -43,6 +43,8 @@ services:
       DATABASE_URL: postgresql://vigil:vigil_pass@postgres:5432/vigil?schema=public
       PORT: '3001'
       DASHBOARD_ORIGIN: http://localhost:8080
+      # 告警详情链接前缀：让导师/同事点开能直达看板（改为宿主机的可访问地址，如 http://192.168.1.10:8080）
+      DASHBOARD_BASE_URL: http://localhost:8080
     ports:
       - '3001:3001'
 

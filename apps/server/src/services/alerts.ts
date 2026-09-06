@@ -39,7 +39,7 @@ export async function notifyNewIssue(appId: string, issueId: string, title: stri
     `**等级**：${level}`,
     `**内容**：${title}`,
     stack ? `**堆栈首帧**：\n\`\`\`\n${stack.split('\n').slice(0, 4).join('\n')}\n\`\`\`` : '',
-    `[查看详情](http://localhost:5173/issues/${issueId})`,
+    `[查看详情](${process.env.DASHBOARD_BASE_URL ?? 'http://localhost:5173'}/issues/${issueId})`,
   ]
     .filter(Boolean)
     .join('\n')
@@ -72,4 +72,57 @@ export async function checkErrorSpike(appId: string): Promise<void> {
       })
     }
   }
+}
+
+/**
+ * 性能劣化告警：核心 Web Vitals（LCP / INP / CLS）的近期 P75 超过
+ * 7 天前基线 P75 的 `threshold` 倍时，推送告警。
+ * `threshold` 为整数倍（默认 2 倍），与 AlertRule 的 Int 字段保持一致。
+ */
+export async function checkPerfDegrade(appId: string): Promise<void> {
+  const rules = await prisma.alertRule.findMany({ where: { appId, type: 'perf_degrade', enabled: true } })
+  if (rules.length === 0) return
+
+  const metrics = ['LCP', 'INP', 'CLS']
+  const day = 24 * 60 * 60 * 1000
+  const now = Date.now()
+
+  // 并发查三类指标：最近 1 天 vs 7 天前同一天（基线）
+  const [recent, baseline] = await Promise.all([
+    Promise.all(metrics.map((m) => fetchP75(appId, m, now - day, now))),
+    Promise.all(metrics.map((m) => fetchP75(appId, m, now - 8 * day, now - 7 * day))),
+  ])
+
+  metrics.forEach((metric, i) => {
+    const r = recent[i]
+    const b = baseline[i]
+    if (r === null || b === null || b <= 0) return
+    const ratio = r / b
+    for (const rule of rules) {
+      if (ratio > rule.threshold) {
+        await push(rule.webhook, {
+          title: '🐢 Vigil 性能劣化',
+          content:
+            `项目 \`${appId}\` 的 **${metric}** 近期 P75 为 ${r.toFixed(0)} ms，` +
+            `是 7 天前基线（${b.toFixed(0)} ms）的 **${ratio.toFixed(1)} 倍**（阈值 ${rule.threshold} 倍）。`,
+        })
+      }
+    }
+  })
+}
+
+/** 取某指标在时间段内的 P75（近似：取样本升序第 75 分位） */
+async function fetchP75(appId: string, metric: string, from: number, to: number): Promise<number | null> {
+  const rows = await prisma.event.findMany({
+    where: { appId, kind: 'performance', perfName: metric, ts: { gte: new Date(from), lt: new Date(to) } },
+    select: { perfValue: true },
+    take: 5000,
+  })
+  const vals = rows
+    .map((r) => r.perfValue)
+    .filter((v): v is number => typeof v === 'number')
+    .sort((a, b) => a - b)
+  if (vals.length === 0) return null
+  const idx = Math.min(Math.floor(vals.length * 0.75), vals.length - 1)
+  return vals[idx]
 }

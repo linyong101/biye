@@ -26,6 +26,7 @@ npx vigil-cli upload --app-id APP_ID --release $GIT_COMMIT --dir dist/assets`
 const ALERT_TYPES = [
   { value: 'new_issue', label: '出现新问题' },
   { value: 'error_spike', label: '错误量突增' },
+  { value: 'perf_degrade', label: '性能劣化' },
 ]
 
 export function Settings() {
@@ -359,9 +360,11 @@ function AddAlertForm({ onSubmit }: { onSubmit: (type: string, webhook: string, 
           className="input py-1.5"
         />
       </div>
-      {type === 'error_spike' && (
+      {(type === 'error_spike' || type === 'perf_degrade') && (
         <div>
-          <label className="mb-1 block text-xs text-slate-400">突增倍数</label>
+          <label className="mb-1 block text-xs text-slate-400">
+            {type === 'error_spike' ? '突增倍数' : '劣化倍数'}
+          </label>
           <input
             type="number"
             min={1}

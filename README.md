@@ -8,6 +8,24 @@ import { init } from '@vigil/web-sdk'
 init({ appId: 'my-shop', endpoint: 'https://vigil.example.com/api/report' })
 ```
 
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Node](https://img.shields.io/badge/node-%3E%3D18-green)
+![TypeScript](https://img.shields.io/badge/lang-TypeScript-3178c6)
+![SDK](https://img.shields.io/badge/SDK-%3C%2010KB%20gzip-8b5cf6)
+![Docker](https://img.shields.io/badge/deploy-Docker%20Compose-2496ed)
+![ECharts](https://img.shields.io/badge/charts-ECharts-5470c6)
+
+## 技术栈
+
+| 层 | 技术 |
+| --- | --- |
+| 采集端 SDK | TypeScript，零运行时依赖，插件化架构（按需引入） |
+| 上报通道 | Fetch / XMLHttpRequest 劫持、`sendBeacon`、失败指数退避重试 + 离线补报 |
+| 服务端 | Node.js + Fastify + Prisma（SQLite 零依赖启动 / PostgreSQL 生产） |
+| 可视化看板 | React 18 + Vite + ECharts（独立分包）+ TanStack Query |
+| 部署 | Docker Compose 一键私有化（PostgreSQL + Redis） |
+| AI 诊断 | 兼容 OpenAI 规范的大模型 + 内置规则库兜底，外部不可用时自动降级 |
+
 ---
 
 ## 一、解决什么问题
@@ -44,7 +62,7 @@ init({ appId: 'my-shop', endpoint: 'https://vigil.example.com/api/report' })
 - `POST /api/report` 批量上报，幂等去重，按项目自动建项目
 - 错误指纹聚合：自动创建 / 更新 Issue，统计发生次数与影响用户数
 - Source Map 上传与堆栈还原（带内存缓存，避免重复解析）
-- 告警引擎：新问题、错误量突增，推送到 Webhook
+- 告警引擎：新问题、错误量突增、性能劣化，推送到企业微信 / 钉钉 / 飞书 Webhook
 - 多维查询：概览指标、趋势、分位数、浏览器/版本/页面分布
 
 ### AI 根因诊断
@@ -67,6 +85,7 @@ init({ appId: 'my-shop', endpoint: 'https://vigil.example.com/api/report' })
 - **问题列表**：状态/类型/关键字筛选，分页
 - **问题详情**：还原后堆栈、AI 诊断、影响面统计、单次事件的环境信息与行为轨迹
 - **性能**：P50/P75/P95 对比 + 健康度评级
+- **会话回放**：按会话聚合的轻量 DOM 快照录屏，时间轴 + 逐帧回放 + 出错前操作路径还原
 - **接入与告警**：接入代码片段、Source Map 上传命令、AI 配置、告警规则管理
 - **账号**：修改密码、用户管理（管理员）
 
@@ -226,12 +245,17 @@ vigil/
 - [x] 演示数据与异常制造机
 - [x] AI 根因诊断（大模型 + 规则库兜底）
 - [x] 用户登录与角色权限
+- [x] 会话回放 UI（时间轴 + 逐帧 DOM 快照回放）
+- [x] 告警引擎三类规则（新问题 / 错误突增 / 性能劣化）
 
 待推进（W4）：
 
 - [ ] 单元测试（Vitest）与 E2E 冒烟
 - [ ] `vigil-cli`：Source Map 上传命令行工具
-- [ ] 告警规则引擎完善（性能劣化告警）
+- [x] 告警规则引擎完善（性能劣化告警）已落地
+- [ ] 生产切换 PostgreSQL + Redis 限流
+- [ ] npm 发布 `@vigil/web-sdk`
+- [ ] Docker 部署全流程验证
 - [ ] 生产切换 PostgreSQL + Redis 限流
 - [ ] npm 发布 `@vigil/web-sdk`
 - [ ] Docker 部署全流程验证
