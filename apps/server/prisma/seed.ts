@@ -84,8 +84,181 @@ function hash(str: string): string {
   return (h >>> 0).toString(36)
 }
 
+// ---- 演示会话回放 & 告警规则（答辩演示用，可控、可讲解） ----
+const DEMO_WEBHOOK = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=DEMO_REPLACE_ME'
+
+interface SeedReplayNode {
+  tag: string
+  text?: string
+  cls?: string
+  id?: string
+  rect: { x: number; y: number; w: number; h: number }
+  value?: string
+}
+interface SeedReplayFrame {
+  type: string
+  url: string
+  t: number
+  nodes: SeedReplayNode[]
+}
+interface SeedScenario {
+  sessionId: string
+  browser: string
+  os: string
+  frames: SeedReplayFrame[]
+  error?: { kind: string; level: string; message: string }
+}
+
+const DEMO_PAGES = {
+  home: 'https://shop.example.com/',
+  product: 'https://shop.example.com/product/10086',
+  cart: 'https://shop.example.com/cart',
+  confirm: 'https://shop.example.com/order/confirm',
+}
+
+function navNodes(): SeedReplayNode[] {
+  return [
+    { tag: 'header', cls: 'topbar', rect: { x: 0, y: 0, w: 100, h: 8 }, text: 'Vigil Shop' },
+    { tag: 'a', cls: 'nav', rect: { x: 4, y: 2, w: 8, h: 4 }, text: '首页' },
+    { tag: 'a', cls: 'nav', rect: { x: 14, y: 2, w: 8, h: 4 }, text: '商品' },
+    { tag: 'a', cls: 'nav', rect: { x: 24, y: 2, w: 10, h: 4 }, text: '购物车' },
+  ]
+}
+
+const SCENARIOS: SeedScenario[] = [
+  {
+    sessionId: 'demo-s-cart-500',
+    browser: 'Chrome',
+    os: 'Windows',
+    error: { kind: 'http', level: 'error', message: 'POST /api/order/submit -> 500 (1203ms)' },
+    frames: [
+      { type: 'snapshot', url: DEMO_PAGES.cart, t: 0,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: '我的购物车' },
+          { tag: 'div', cls: 'goods', rect: { x: 6, y: 20, w: 60, h: 18 }, text: '机械键盘 ×1  ¥399' },
+          { tag: 'button', id: 'btn-checkout', cls: 'btn primary', rect: { x: 6, y: 42, w: 28, h: 8 }, text: '去结算' }] },
+      { type: 'click', url: DEMO_PAGES.cart, t: 1200,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: '我的购物车' },
+          { tag: 'button', id: 'btn-checkout', cls: 'btn primary active', rect: { x: 6, y: 42, w: 28, h: 8 }, text: '去结算' }] },
+      { type: 'route', url: DEMO_PAGES.confirm, t: 1700,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: '订单确认' },
+          { tag: 'input', id: 'addr', cls: 'field', rect: { x: 6, y: 22, w: 60, h: 8 } },
+          { tag: 'button', id: 'btn-submit', cls: 'btn primary', rect: { x: 6, y: 34, w: 28, h: 8 }, text: '提交订单' }] },
+      { type: 'input', url: DEMO_PAGES.confirm, t: 2700,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: '订单确认' },
+          { tag: 'input', id: 'addr', cls: 'field filled', rect: { x: 6, y: 22, w: 60, h: 8 }, value: '北京市朝阳区建国路88号' },
+          { tag: 'button', id: 'btn-submit', cls: 'btn primary', rect: { x: 6, y: 34, w: 28, h: 8 }, text: '提交订单' }] },
+      { type: 'click', url: DEMO_PAGES.confirm, t: 3500,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: '订单确认' },
+          { tag: 'input', id: 'addr', cls: 'field filled', rect: { x: 6, y: 22, w: 60, h: 8 }, value: '北京市朝阳区建国路88号' },
+          { tag: 'button', id: 'btn-submit', cls: 'btn primary loading', rect: { x: 6, y: 34, w: 28, h: 8 }, text: '提交中…' }] },
+      { type: 'snapshot', url: DEMO_PAGES.confirm, t: 4300,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: '订单确认' },
+          { tag: 'div', cls: 'alert error', rect: { x: 6, y: 20, w: 70, h: 8 }, text: '网络错误：提交订单失败 (500)' },
+          { tag: 'button', id: 'btn-submit', cls: 'btn primary', rect: { x: 6, y: 32, w: 28, h: 8 }, text: '重新提交' }] },
+    ],
+  },
+  {
+    sessionId: 'demo-s-whitescreen',
+    browser: 'Safari',
+    os: 'iOS',
+    error: { kind: 'whiteScreen', level: 'fatal', message: 'White screen detected on /order/confirm' },
+    frames: [
+      { type: 'snapshot', url: DEMO_PAGES.confirm, t: 0,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: '订单确认' },
+          { tag: 'div', cls: 'card', rect: { x: 6, y: 20, w: 60, h: 30 }, text: '加载中…' }] },
+      { type: 'snapshot', url: DEMO_PAGES.confirm, t: 1500,
+        nodes: [...navNodes(),
+          { tag: 'div', cls: 'empty', rect: { x: 10, y: 30, w: 80, h: 30 }, text: '（页面空白 / 白屏）' }] },
+    ],
+  },
+  {
+    sessionId: 'demo-s-browse',
+    browser: 'Edge',
+    os: 'macOS',
+    frames: [
+      { type: 'snapshot', url: DEMO_PAGES.home, t: 0,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: 'Vigil Shop 首页' },
+          { tag: 'div', cls: 'banner', rect: { x: 6, y: 20, w: 60, h: 16 }, text: '新人专享 · 满199减50' }] },
+      { type: 'click', url: DEMO_PAGES.home, t: 900,
+        nodes: [...navNodes(),
+          { tag: 'div', cls: 'banner active', rect: { x: 6, y: 20, w: 60, h: 16 }, text: '新人专享 · 满199减50' }] },
+      { type: 'route', url: DEMO_PAGES.product, t: 1400,
+        nodes: [...navNodes(),
+          { tag: 'h1', cls: 'title', rect: { x: 6, y: 12, w: 60, h: 6 }, text: '机械键盘' },
+          { tag: 'button', id: 'btn-buy', cls: 'btn primary', rect: { x: 6, y: 40, w: 28, h: 8 }, text: '加入购物车' }] },
+    ],
+  },
+]
+
+function behaviorEvent(s: SeedScenario, f: SeedReplayFrame, ts: number) {
+  return {
+    eventId: `seed-replay-${s.sessionId}-${f.t}-${Math.random().toString(36).slice(2, 7)}`,
+    appId: APP_ID,
+    kind: 'behavior' as const,
+    ts: new Date(ts),
+    sessionId: s.sessionId,
+    url: f.url,
+    browser: s.browser,
+    os: s.os,
+    device: s.os === 'iOS' || s.os === 'Android' ? 'Mobile' : 'Desktop',
+    payload: JSON.stringify({ name: 'replay', extra: f }),
+  }
+}
+
+async function seedReplaySessions(): Promise<void> {
+  const base = Date.now() - 30 * 60 * 1000
+  for (const s of SCENARIOS) {
+    for (const f of s.frames) {
+      await prisma.event.create({ data: behaviorEvent(s, f, base + f.t) })
+    }
+    if (s.error) {
+      const last = s.frames[s.frames.length - 1]
+      await prisma.event.create({
+        data: {
+          eventId: `seed-err-${s.sessionId}`,
+          appId: APP_ID,
+          kind: 'error',
+          ts: new Date(base + (last?.t ?? 0)),
+          sessionId: s.sessionId,
+          url: last?.url ?? DEMO_PAGES.home,
+          browser: s.browser,
+          os: s.os,
+          device: s.os === 'iOS' || s.os === 'Android' ? 'Mobile' : 'Desktop',
+          errorKind: s.error.kind,
+          level: s.error.level,
+          fingerprint: `demo-${s.sessionId}`,
+          release: RELEASE,
+          environment: 'production',
+          payload: JSON.stringify({ kind: 'error', errorKind: s.error.kind, level: s.error.level, message: s.error.message, url: last?.url }),
+        },
+      })
+    }
+  }
+  console.log(`[vigil] 演示会话回放：${SCENARIOS.length} 个会话（含错误 ${SCENARIOS.filter((s) => s.error).length} 个）`)
+}
+
+async function seedAlertRules(): Promise<void> {
+  await prisma.alertRule.createMany({
+    data: [
+      { appId: APP_ID, type: 'new_issue', threshold: 1, webhook: DEMO_WEBHOOK },
+      { appId: APP_ID, type: 'error_spike', threshold: 3, webhook: DEMO_WEBHOOK },
+      { appId: APP_ID, type: 'perf_degrade', threshold: 2, webhook: DEMO_WEBHOOK },
+    ],
+  })
+  console.log('[vigil] 演示告警规则：new_issue / error_spike / perf_degrade 各 1 条')
+}
+
 async function main(): Promise<void> {
   console.log('[vigil] 清理旧演示数据...')
+  await prisma.alertRule.deleteMany({ where: { appId: APP_ID } })
   await prisma.event.deleteMany({ where: { appId: APP_ID } })
   await prisma.issueUser.deleteMany({ where: { appId: APP_ID } })
   await prisma.issue.deleteMany({ where: { appId: APP_ID } })
@@ -218,6 +391,11 @@ async function main(): Promise<void> {
       data: { eventCount, userCount, lastSeen: last?.ts ?? issue.lastSeen },
     })
   }
+
+  // 生成可控的演示会话（含「出错前操作路径」），让会话回放页有干净、可讲解的内容
+  await seedReplaySessions()
+  // 生成演示用告警规则，让告警配置页非空、答辩时可讲解三类规则
+  await seedAlertRules()
 
   const totalEvents = await prisma.event.count({ where: { appId: APP_ID } })
   console.log(`[vigil] 完成：${issues.length} 个 issue，${totalEvents} 条事件`)
