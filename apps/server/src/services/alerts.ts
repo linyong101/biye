@@ -93,10 +93,11 @@ export async function checkPerfDegrade(appId: string): Promise<void> {
     Promise.all(metrics.map((m) => fetchP75(appId, m, now - 8 * day, now - 7 * day))),
   ])
 
-  metrics.forEach((metric, i) => {
+  for (let i = 0; i < metrics.length; i++) {
+    const metric = metrics[i]
     const r = recent[i]
     const b = baseline[i]
-    if (r === null || b === null || b <= 0) return
+    if (r === null || b === null || b <= 0) continue
     const ratio = r / b
     for (const rule of rules) {
       if (ratio > rule.threshold) {
@@ -108,7 +109,7 @@ export async function checkPerfDegrade(appId: string): Promise<void> {
         })
       }
     }
-  })
+  }
 }
 
 /** 取某指标在时间段内的 P75（近似：取样本升序第 75 分位） */
