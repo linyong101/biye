@@ -2,24 +2,29 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import type { FastifyInstance } from 'fastify'
 import { buildApp } from '../src/app'
+import { prisma } from '../src/db'
+import { hashPassword } from '../src/services/auth'
 
 let app: FastifyInstance
 let token = ''
 
+// 固定管理员凭据：upsert 保证一定存在，避免多文件共用 test.db 时的竞态
+const ADMIN = { username: 'test_admin', password: 'test_pass_123' }
+
 test.before(async () => {
   app = await buildApp()
   await app.ready()
-  // 会话回放接口需登录。用固定凭据：先尝试登录，失败（库里无用户）则注册，保证幂等
-  const creds = { username: 'testadmin', password: 'secret123' }
-  let login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: creds })
-  if (!login.json().ok) {
-    await app.inject({
-      method: 'POST',
-      url: '/api/auth/register',
-      payload: { username: creds.username, password: creds.password, name: 'test' },
-    })
-    login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: creds })
-  }
+  await prisma.user.upsert({
+    where: { username: ADMIN.username },
+    update: { passwordHash: hashPassword(ADMIN.password), role: 'admin', enabled: true },
+    create: {
+      username: ADMIN.username,
+      passwordHash: hashPassword(ADMIN.password),
+      name: 'test-admin',
+      role: 'admin',
+    },
+  })
+  const login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: ADMIN })
   token = login.json().data.token
 })
 
