@@ -102,20 +102,37 @@ export function toSafeUser(user: {
   }
 }
 
-/** 初始化默认管理员账号（首次启动时调用） */
-export async function ensureDefaultAdmin(): Promise<void> {
-  const count = await prisma.user.count()
-  if (count > 0) return
+/** 默认管理员的固定 id：保证「删库重置」后 id 不变化，避免浏览器旧 token 失效 */
+export const DEFAULT_ADMIN_ID = 'admin-default'
 
-  await prisma.user.create({
-    data: {
-      username: 'admin',
-      passwordHash: hashPassword('admin123'),
-      name: '系统管理员',
-      role: 'admin',
-    },
-  })
-  console.log('[vigil] 已创建默认管理员账号：admin / admin123（请登录后尽快修改密码）')
+/**
+ * 初始化默认管理员账号（首次启动时调用）。
+ *
+ * 关键：id 固定为 DEFAULT_ADMIN_ID，使「删库重建」后 admin 的 id 保持不变，
+ * 从而避免登录态（JWT 的 sub 即用户 id）因重置而失效，根治「重置后登录过期」。
+ */
+export async function ensureDefaultAdmin(): Promise<void> {
+  const existing = await prisma.user.findUnique({ where: { username: 'admin' } })
+
+  if (!existing) {
+    await prisma.user.create({
+      data: {
+        id: DEFAULT_ADMIN_ID,
+        username: 'admin',
+        passwordHash: hashPassword('admin123'),
+        name: '系统管理员',
+        role: 'admin',
+      },
+    })
+    console.log('[vigil] 已创建默认管理员账号：admin / admin123（请登录后尽快修改密码）')
+    return
+  }
+
+  // 已存在但 id 为历史随机值 → 统一为固定 id（保留用户名/密码/角色），彻底规避旧 token 失效
+  if (existing.id !== DEFAULT_ADMIN_ID) {
+    await prisma.user.update({ where: { username: 'admin' }, data: { id: DEFAULT_ADMIN_ID } })
+    console.log('[vigil] 已将默认管理员账号 id 固定为 admin-default（根治重置后登录过期）')
+  }
 }
 
 export function assertRole(request: FastifyRequest, role: 'admin'): JwtPayload | null {

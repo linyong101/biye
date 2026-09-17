@@ -1,9 +1,9 @@
 import { execSync } from 'node:child_process'
 import { prisma } from '../src/db'
 
-// 测试环境：指向独立的 SQLite 库，避免污染开发数据
-process.env.NODE_ENV = 'test'
-process.env.DATABASE_URL = process.env.DATABASE_URL ?? 'file:./prisma/test.db'
+// 注意：测试库环境变量（NODE_ENV / DATABASE_URL）由 ./test/env.ts 通过 `node --import`
+// 在最前面注入，确保早于 PrismaClient 实例化，从而强制连独立的测试库（绝不连 dev.db）。
+// 若此处再写 `process.env.DATABASE_URL = ...`，会因 ESM import 提升而晚于 Prisma 初始化，无效。
 
 // 首次运行前根据 schema 建表（--accept-data-loss 允许测试库重置）
 try {
