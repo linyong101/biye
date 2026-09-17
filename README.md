@@ -93,6 +93,55 @@ init({ appId: 'my-shop', endpoint: 'https://vigil.example.com/api/report' })
 
 ## 三、快速开始
 
+### 本机快速开始（Windows · 固定路径操作标准）
+
+> 本机项目路径：`C:\Users\朴灿烈\CodeBuddy\20260905210509\vigil`，以下命令可直接复制执行。
+> 首次运行从「第 1 步」开始；日常重新跑起来只需「第 3 步」。
+
+**第 1 步：进入项目目录并安装依赖（首次）**
+
+```powershell
+cd C:\Users\朴灿烈\CodeBuddy\20260905210509\vigil
+npm install
+```
+
+**第 2 步：重置数据库（可选，仅在想清空本地数据时执行）**
+
+```powershell
+cd C:\Users\朴灿烈\CodeBuddy\20260905210509\vigil
+del C:\Users\朴灿烈\CodeBuddy\20260905210509\vigil\apps\server\prisma\dev.db
+```
+
+**第 3 步：重建表 + 灌演示数据 + 启动**
+
+```powershell
+cd C:\Users\朴灿烈\CodeBuddy\20260905210509\vigil
+npm run db:push
+npm run seed
+npm run dev
+```
+
+**第 4 步：确认 admin 已重建**
+
+看 `npm run dev` 的输出，出现这一行就成功了：
+
+```text
+[vigil] 已创建默认管理员账号：admin / admin123（请登录后尽快修改密码）
+```
+
+> 若未执行第 2 步重置（admin 已存在），则不会打印此行，直接用 `admin` / `admin123` 登录即可。
+
+**第 5 步：另开一个终端跑演示终端**
+
+```powershell
+cd C:\Users\朴灿烈\CodeBuddy\20260905210509\vigil
+npm run demo
+```
+
+然后用 `admin` / `admin123` 登录看板，就能看到「报错 → 回放 → 告警」整条链路了。
+
+---
+
 ### 环境要求
 
 Node.js >= 18（推荐 20+）、npm >= 9
